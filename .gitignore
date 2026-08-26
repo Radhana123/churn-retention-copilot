@@ -3,5 +3,6 @@ __pycache__/
 *.pyc
 .env
 data/*.csv
+!data/WA_Fn-UseC_-Telco-Customer-Churn.csv
 .DS_Store
 .ipynb_checkpoints/
