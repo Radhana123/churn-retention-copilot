@@ -11,7 +11,7 @@ An end-to-end data science project combining **statistical analysis**, **machine
 This project goes beyond building a single churn prediction model. It follows a rigorous data science workflow:
 
 1. **Statistical validation** — confirming which factors actually drive churn using hypothesis testing, not just correlation
-2. **Model comparison** — evaluating Logistic Regression, Random Forest, and XGBoost on proper metrics (Precision, Recall, ROC-AUC)
+2. **Model comparison** — evaluating Logistic Regression, Random Forest, XGBoost, and a Neural Network on proper metrics (Precision, Recall, ROC-AUC)
 3. **Explainability** — using SHAP to understand *why* the model predicts what it predicts, both globally and per-customer
 4. **GenAI action layer** — translating model explanations into personalized, actionable retention offers using an LLM
 
@@ -22,6 +22,22 @@ This project goes beyond building a single churn prediction model. It follows a 
 - **Contract type** is the single strongest churn predictor (SHAP importance: 1.07) — month-to-month customers churn at **42.7%** vs. **2.9%** for two-year contracts
 - Churned customers have significantly shorter average tenure (17.98 vs 37.65 months, p < 0.001) and higher monthly charges (₹74.44 vs ₹61.31, p < 0.001)
 - Logistic Regression (ROC-AUC 0.835) outperformed both Random Forest and XGBoost (0.811 each) — an interesting finding suggesting the relationships in this dataset are largely linear, and added model complexity didn't translate to better generalization
+- Adding a Neural Network didn't change that conclusion — it still trailed Logistic Regression on ROC-AUC (0.826) — but it surfaced a real trade-off: **78.3% recall** vs 48–56% for the other three models, at the cost of precision (49.2%)
+
+---
+
+## Neural Network Comparison
+
+A feedforward network (2 hidden layers, dropout, class-weighted for the ~27% churn base rate) was trained on the same scaled features as Logistic Regression, to test whether the churn signal has structure the linear/tree models were missing.
+
+| Model | Precision | Recall | ROC-AUC |
+|---|---|---|---|
+| Logistic Regression | 0.624 | 0.564 | **0.835** |
+| Neural Network | 0.492 | **0.783** | 0.826 |
+| XGBoost | 0.581 | 0.527 | 0.811 |
+| Random Forest | 0.618 | 0.484 | 0.811 |
+
+It didn't win on ROC-AUC — more evidence the churn signal here is largely linear, and extra model capacity doesn't buy separability. What it did do is trade precision for recall: it catches far more of the customers who actually churn, at the cost of more false alarms. For a retention use case, that trade-off is often worth making — a missed churner is lost revenue, while a false-positive retention offer is a bounded cost. Which model to deploy depends on that business trade-off, not on which one wins a single metric.
 
 ---
 
@@ -29,7 +45,7 @@ This project goes beyond building a single churn prediction model. It follows a 
 
 - 📈 Interactive dashboard with 4 views: Overview, Statistical Analysis, Model Comparison, AI Retention Copilot
 - 🧪 Hypothesis testing (chi-square, t-tests) with significance flags
-- 🤖 Three-model comparison with standard classification metrics
+- 🤖 Four-model comparison (Logistic Regression, Random Forest, XGBoost, Neural Network) with standard classification metrics
 - 🔍 SHAP-based global feature importance and per-customer explanations
 - 💬 LLM-generated, specific retention offers grounded in each customer's SHAP explanation
 
@@ -42,6 +58,7 @@ This project goes beyond building a single churn prediction model. It follows a 
 | Data Processing | pandas, NumPy |
 | Statistical Testing | SciPy |
 | ML Models | scikit-learn, XGBoost |
+| Deep Learning | TensorFlow / Keras |
 | Explainability | SHAP |
 | GenAI | Groq API (openai/gpt-oss-120b) |
 | Frontend | Streamlit |
@@ -63,6 +80,7 @@ churn-retention-copilot/
 │   ├── data_loader.py        # Data loading and cleaning
 │   ├── eda_stats.py          # Statistical tests (chi-square, t-tests)
 │   ├── model_trainer.py      # LR/RF/XGBoost training and evaluation
+│   ├── dl_model.py           # Neural network comparison (TensorFlow/Keras)
 │   ├── explainer.py          # SHAP explainability
 │   └── retention_copilot.py  # GenAI retention strategy generator
 ├── data/                     # Telco Customer Churn dataset (not committed)
@@ -94,6 +112,9 @@ echo GROQ_API_KEY=your_key_here > .env
 
 # Run the app
 streamlit run app.py
+
+# Run the neural network comparison separately
+python src/dl_model.py
 ```
 
 ---
